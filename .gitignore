@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build output
+frontend/dist/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Runtime data
+backend/.result_cache/
+/data/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
