@@ -27,7 +27,7 @@ from config import (
     QUERY_TIMEOUT,
     SCHEMA_DIR,
 )
-from engine import create_engine
+from engine import EngineTimeout, create_engine
 from schema_loader import get_schema_summary, load_schema
 
 
@@ -42,6 +42,12 @@ SAMPLES_DIR = BACKEND_DIR / "samples"
 
 runner = create_engine(ENGINE_MODE, SAMPLES_DIR)
 _query_lock = asyncio.Lock()  # One query at a time (the engine owns the GPU)
+
+# /api/neighborhood tuning: how long to wait for a running query before giving
+# up with 409, and how long to allow the daemon to answer the lookup itself.
+NEIGHBORHOOD_LOCK_WAIT = 5.0   # seconds
+NEIGHBORHOOD_TIMEOUT = 60      # seconds
+
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
@@ -130,6 +136,21 @@ class QueryResponse(BaseModel):
     # The UI badges it; without this a cached reply is indistinguishable from a
     # fast one, which is exactly the confusion a live demo cannot afford.
     from_cache: bool = False
+
+
+class NeighborhoodRequest(BaseModel):
+    """Request body for a vertex-anchored 1-hop neighbourhood lookup."""
+
+    vertex_ids: list[int]
+    dataset_id: str = "LDBC_SNB_SF1"
+    # TOTAL incident edges kept per requested vertex: both directions and all
+    # edge labels share this one budget, so the answer never carries more than
+    # max_per_vertex edges per seed.
+    max_per_vertex: int = 25
+    # Optional edge-label allow-list.  Empty/None means every edge label, with
+    # the per-vertex budget shared round-robin across labels so one high-degree
+    # label cannot hide the others.
+    edge_labels: list[str] | None = None
 
 
 class DatasetInfo(BaseModel):
@@ -595,6 +616,81 @@ async def run_query(req: QueryRequest) -> QueryResponse:
         _cache_put(req.query_json, req.dataset_id, response.model_dump())
 
     return response
+
+
+@app.post("/api/neighborhood")
+async def get_neighborhood(req: NeighborhoodRequest) -> dict:
+    """1-hop incident edges of the given vertices, for graph-context expansion.
+
+    Vertex ids are the GLOBALIZED ids the query samples carry
+    the query samples carry, so they can be passed straight through from a
+    result graph.
+
+    This is a host-side graph read inside the engine — no GPU work, no query
+    state — but it shares the engine's request channel, so it takes the same
+    _query_lock as /api/query and cannot interleave with one.
+    """
+    if req.dataset_id not in DATASETS:
+        raise HTTPException(
+            status_code=400, detail=f"Unknown dataset: {req.dataset_id}"
+        )
+    if not req.vertex_ids:
+        raise HTTPException(status_code=400, detail="vertex_ids must not be empty")
+    if len(req.vertex_ids) > 256:
+        raise HTTPException(
+            status_code=400, detail="At most 256 vertex_ids per request"
+        )
+    if any(v < 0 for v in req.vertex_ids):
+        raise HTTPException(status_code=400, detail="vertex_ids must be non-negative")
+
+    cap = max(1, min(int(req.max_per_vertex), 1000))
+
+    # Wait briefly for a running query rather than failing instantly; a
+    # neighbourhood lookup is a UI interaction and a short stall beats an error.
+    try:
+        await asyncio.wait_for(_query_lock.acquire(), timeout=NEIGHBORHOOD_LOCK_WAIT)
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=409, detail="A query is running; try again in a moment"
+        )
+
+    payload: dict[str, Any] = {
+        "vertex_ids": req.vertex_ids,
+        "max_per_vertex": cap,
+    }
+    if req.edge_labels:
+        payload["edge_labels"] = req.edge_labels
+
+    try:
+        result = await runner.run_neighborhood(
+            payload, req.dataset_id, _runner_config(), timeout=NEIGHBORHOOD_TIMEOUT
+        )
+    except EngineTimeout as e:
+        # The engine is still alive and still working on this lookup — say so
+        # with a 504 (the caller just drops the context layer) instead of
+        # taking the shared process down over a UI hover.
+        logger.warning("Neighborhood lookup timed out: %s", e)
+        raise HTTPException(
+            status_code=504,
+            detail=(
+                f"Neighborhood lookup exceeded {NEIGHBORHOOD_TIMEOUT}s; "
+                f"try fewer vertices or a smaller max_per_vertex"
+            ),
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        _query_lock.release()
+
+    logger.info(
+        "Neighborhood: %d seed(s) -> %d vertices, %d edges (cap=%d, truncated=%s)",
+        len(req.vertex_ids),
+        len(result.get("vertices", [])),
+        len(result.get("edges", [])),
+        cap,
+        result.get("truncated"),
+    )
+    return result
 
 
 @app.get("/api/status")
