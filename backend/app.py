@@ -28,6 +28,7 @@ from config import (
     SCHEMA_DIR,
 )
 from engine import EngineTimeout, create_engine
+from nfa_builder import build_query_json, regex_to_automaton
 from schema_loader import get_schema_summary, load_schema
 
 
@@ -153,6 +154,16 @@ class NeighborhoodRequest(BaseModel):
     edge_labels: list[str] | None = None
 
 
+class NFARequest(BaseModel):
+    """Request body for NFA/automaton construction."""
+
+    regex: str
+    name: str
+    direction: str = "forward"
+    min_length: int | None = None
+    max_length: int | None = None
+
+
 class DatasetInfo(BaseModel):
     """Information about an available dataset."""
 
@@ -160,6 +171,15 @@ class DatasetInfo(BaseModel):
     name: str
     schema: str
     loaded: bool
+
+
+class BuildQueryRequest(BaseModel):
+    """Request body for building a complete engine query JSON."""
+
+    vertices: list[str]
+    edges: list[str]
+    automata: dict[str, dict]
+    we_constraints: list[dict] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -691,6 +711,28 @@ async def get_neighborhood(req: NeighborhoodRequest) -> dict:
         result.get("truncated"),
     )
     return result
+
+
+@app.post("/api/nfa")
+async def build_nfa(req: NFARequest) -> dict:
+    """Convert a regex pattern to an NFA automaton in engine JSON format."""
+    try:
+        automaton = regex_to_automaton(
+            regex=req.regex,
+            name=req.name,
+            direction=req.direction,
+            min_length=req.min_length,
+            max_length=req.max_length,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return automaton
+
+
+@app.post("/api/build-query")
+async def build_query(req: BuildQueryRequest) -> dict:
+    """Build a complete engine query JSON from frontend components."""
+    return build_query_json(req.vertices, req.edges, req.automata, req.we_constraints)
 
 
 @app.get("/api/status")
