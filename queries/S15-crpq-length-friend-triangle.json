@@ -1,0 +1,43 @@
+{
+  "description": "Find 'small world' triangles: commenters who know the original poster within 3 friendship hops.",
+  "description_ko": "'좁은 세상' 삼각형 탐색: 댓글 작성자가 원 게시자를 3홉 이내 친구 관계로 아는 경우.",
+  "regex_pattern": "CRPQ + KNOWS{1,3}",
+  "query_vertices": [
+    "post:Post",
+    "person2:Person",
+    "comment:Comment",
+    "person1:Person"
+  ],
+  "query_edges": [
+    "(comment)-[REPLY_OF]->(post)",
+    "(person1)<-[HAS_CREATOR]-(comment)",
+    "(post)-[HAS_CREATOR]->(person2)",
+    "(person1)-[P1]->(person2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS{1,3}",
+      "min_length": 1,
+      "max_length": 3,
+      "states": [
+        "q0"
+      ],
+      "alphabets": [
+        "KNOWS"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "KNOWS-",
+          "q0"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q0"
+      ]
+    }
+  }
+}

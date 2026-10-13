@@ -1,0 +1,47 @@
+{
+  "description": "Find reply chains where a direct reply is a prefix of a 2-hop reply chain — embedded in a message-creator triangle.",
+  "description_ko": "직접 답글이 2-홉 답글 체인의 접두사인 경우 탐색 — 메시지-작성자 삼각형 내 내재.",
+  "regex_pattern": "prefix(REPLY_OF, REPLY_OF/REPLY_OF) (CRPQ+pWE)",
+  "query_vertices": [
+    "message1:Message",
+    "creator:Person",
+    "comment:Comment",
+    "message2:Message"
+  ],
+  "query_edges": [
+    "(message1)<-[P1]-(comment)",
+    "(message1)-[HAS_CREATOR]->(creator)",
+    "(message2)<-[P2]-(comment)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "REPLY_OF",
+      "states": ["q0", "q1"],
+      "alphabets": ["REPLY_OF"],
+      "transitions": [
+        ["q0", "REPLY_OF-", "q1"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q1"]
+    },
+    "P2": {
+      "regular_expression": "REPLY_OF/REPLY_OF",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["REPLY_OF"],
+      "transitions": [
+        ["q0", "REPLY_OF-", "q1"],
+        ["q1", "REPLY_OF-", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q2"]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same",
+      "type": "prefix"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "description": "Find content paths where a single LIKES or HAS_CREATOR hop is a prefix of a LIKES/REPLY_OF chain — interaction pattern nesting.",
+  "description_ko": "단일 LIKES 또는 HAS_CREATOR 홉이 LIKES/REPLY_OF 체인의 접두사인 콘텐츠 경로 탐색 — 상호작용 패턴 중첩.",
+  "regex_pattern": "prefix(LIKES|(HAS_CREATOR), LIKES/REPLY_OF) (CRPQ+pWE)",
+  "query_vertices": [
+    "message:Message",
+    "creator:Person",
+    "tag:Tag",
+    "person:Person",
+    "message2:Message"
+  ],
+  "query_edges": [
+    "(message)<-[P1]-(person)",
+    "(message)-[HAS_CREATOR]->(creator)",
+    "(tag)<-[HAS_TAG]-(message)",
+    "(message2)<-[P2]-(person)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "LIKES|(HAS_CREATOR)",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["LIKES", "HAS_CREATOR"],
+      "transitions": [
+        ["q0", "LIKES-", "q1"],
+        ["q0", "-HAS_CREATOR", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q1", "q2"]
+    },
+    "P2": {
+      "regular_expression": "LIKES/REPLY_OF",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["LIKES", "REPLY_OF"],
+      "transitions": [
+        ["q0", "LIKES-", "q1"],
+        ["q1", "REPLY_OF-", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q2"]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same",
+      "type": "prefix"
+    }
+  ]
+}

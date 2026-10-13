@@ -1,0 +1,51 @@
+{
+  "description": "Bounded friend-liked content: what do friends within 3 hops like? Limits deep social cascades.",
+  "description_ko": "친구 3홉 이내 좋아요 탐색: 깊은 소셜 연결은 제외하고 가까운 친구가 좋아하는 콘텐츠만 검색.",
+  "regex_pattern": "KNOWS{1,3}/LIKES*",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS{1,3}/LIKES*",
+      "min_length": 1,
+      "max_length": 4,
+      "states": [
+        "q0",
+        "q1"
+      ],
+      "alphabets": [
+        "KNOWS",
+        "LIKES"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "KNOWS-",
+          "q0"
+        ],
+        [
+          "q0",
+          "LIKES-",
+          "q1"
+        ],
+        [
+          "q1",
+          "LIKES-",
+          "q1"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q0",
+        "q1"
+      ]
+    }
+  }
+}
