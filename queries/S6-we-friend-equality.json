@@ -1,0 +1,44 @@
+{
+  "description": "Find friends reached via identical KNOWS label sequences — an unbounded KNOWS* walk and an exact 2-hop chain must spell the same word.",
+  "description_ko": "동일한 KNOWS 라벨 시퀀스로 도달하는 친구 쌍 탐색 — 무제한 KNOWS* 워크와 정확한 2-홉 체인이 같은 단어를 만들어야 함.",
+  "regex_pattern": "KNOWS* = KNOWS/KNOWS (WE)",
+  "query_vertices": [
+    "person1:Person",
+    "person2:Person",
+    "person3:Person"
+  ],
+  "query_edges": [
+    "(person1)-[P1]->(person2)",
+    "(person1)-[P2]->(person3)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    },
+    "P2": {
+      "regular_expression": "KNOWS/KNOWS",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q1"],
+        ["q1", "KNOWS-", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q2"]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same"
+    }
+  ]
+}

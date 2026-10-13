@@ -1,0 +1,47 @@
+{
+  "description": "Find person pairs reachable via identical KNOWS* label sequences from the same source — pure symmetric social reachability.",
+  "description_ko": "같은 출발점에서 동일한 KNOWS* 라벨 시퀀스로 도달하는 사람 쌍 탐색 — 순수 대칭 소셜 도달성.",
+  "regex_pattern": "KNOWS* = KNOWS* (WE)",
+  "query_vertices": [
+    "person1:Person",
+    "person2:Person",
+    "person3:Person"
+  ],
+  "query_edges": [
+    "(person1)-[P1]->(person2)",
+    "(person1)-[P2]->(person3)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    },
+    "P2": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    }
+  },
+  "constraints": [
+    "person1<>person2",
+    "person1<>person3"
+  ],
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same"
+    }
+  ]
+}
