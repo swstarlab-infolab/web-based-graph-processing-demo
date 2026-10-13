@@ -1,0 +1,24 @@
+{
+  "description": "Pure KNOWS* transitive closure — find all people reachable through any chain of friendships.",
+  "description_ko": "순수 KNOWS* 전이적 폐포 — 친구 관계 체인을 통해 도달 가능한 모든 사람 쌍을 탐색.",
+  "regex_pattern": "a*",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    }
+  }
+}

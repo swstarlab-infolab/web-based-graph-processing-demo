@@ -1,0 +1,191 @@
+{
+  "groups": [
+    {
+      "id": "rpq",
+      "label": "RPQ / CRPQ",
+      "label_ko": "정규 경로 쿼리 / 결합 RPQ",
+      "description": "Regular & Conjunctive Regular Path Queries",
+      "color": "#10b981",
+      "tagline": "What **paths** and **graph patterns** connect nodes through **regex-defined edges**?"
+    },
+    {
+      "id": "we",
+      "label": "Word Equality",
+      "label_ko": "단어 동등성",
+      "description": "Word Equality Constraints",
+      "color": "#22d3ee",
+      "tagline": "Are these two traces really the **same interaction pattern**?"
+    },
+    {
+      "id": "prefix",
+      "label": "Prefix WE",
+      "label_ko": "접두사 단어 동등성",
+      "description": "Prefix Word Equality",
+      "color": "#a78bfa",
+      "tagline": "Does this **short trace** continue into a **deeper chain**?"
+    },
+    {
+      "id": "bounded",
+      "label": "Bounded Length",
+      "label_ko": "길이 제한",
+      "description": "Length-bounded Path Queries",
+      "color": "#f59e0b",
+      "tagline": "What patterns emerge within a **fixed hop distance**?"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "R1",
+      "group": "rpq",
+      "filename": "S20-rpq-knows-star.json",
+      "title": "KNOWS* Closure",
+      "title_ko": "KNOWS* 전이적 폐포",
+      "question": "How far does friendship reach?",
+      "question_ko": "친구 관계 체인은 얼마나 멀리 닿을까?"
+    },
+    {
+      "id": "R2",
+      "group": "rpq",
+      "filename": "S1-rpq-friend-transitive.json",
+      "title": "Multi-label Closure",
+      "title_ko": "다중 라벨 전이적 폐포",
+      "question": "Who is connected through friendship or interests?",
+      "question_ko": "친구 관계나 관심사를 통해 누가 연결될까?"
+    },
+    {
+      "id": "R3",
+      "group": "rpq",
+      "filename": "S3-rpq-friend-interest.json",
+      "title": "Friend Interest Type",
+      "title_ko": "친구의 관심사 유형",
+      "question": "What types of interests do friends-of-friends have?",
+      "question_ko": "친구의 친구는 어떤 유형의 관심사를 가졌을까?"
+    },
+    {
+      "id": "R4",
+      "group": "rpq",
+      "filename": "S2-rpq-forum-friend.json",
+      "title": "Forum Moderator Network",
+      "title_ko": "포럼 관리자 네트워크",
+      "question": "Who can forum moderators reach through friendships?",
+      "question_ko": "포럼 관리자가 친구 체인으로 도달할 수 있는 사람은?"
+    },
+    {
+      "id": "R5",
+      "group": "rpq",
+      "filename": "S4-rpq-forum-city.json",
+      "title": "Moderator Friend Cities",
+      "title_ko": "관리자 친구의 도시",
+      "question": "Which cities do friends of forum moderators live in?",
+      "question_ko": "포럼 관리자의 친구들은 어느 도시에 살까?"
+    },
+    {
+      "id": "C1",
+      "group": "rpq",
+      "filename": "S22-crpq-knows-triangle.json",
+      "title": "Social Reply Triangle",
+      "title_ko": "소셜 답글 삼각형",
+      "question": "Do comment and post authors know each other?",
+      "question_ko": "댓글/게시글 작성자가 서로 아는 사이인가?"
+    },
+    {
+      "id": "C2",
+      "group": "rpq",
+      "filename": "S23-crpq-knows-interest-member.json",
+      "title": "Friend Interest Member",
+      "title_ko": "친구 관심사 멤버",
+      "question": "Do forum members' friends share specific interests?",
+      "question_ko": "포럼 멤버의 친구가 특정 관심사를 공유하는가?"
+    },
+    {
+      "id": "W1",
+      "group": "we",
+      "filename": "S6-we-friend-equality.json",
+      "title": "Symmetric Social Position",
+      "title_ko": "대칭적 소셜 위치",
+      "question": "Who reaches friends via identical KNOWS sequences when one path is unbounded and the other is exactly 2 hops?",
+      "question_ko": "한 경로는 무제한, 다른 경로는 정확히 2홉일 때 동일한 KNOWS 시퀀스로 친구에게 도달하는 사람은?"
+    },
+    {
+      "id": "W2",
+      "group": "we",
+      "filename": "S9-we-diff-friend-interest.json",
+      "title": "Content Interaction Match",
+      "title_ko": "콘텐츠 상호작용 매칭",
+      "question": "Do different LIKES/REPLY_OF paths produce the same label sequence?",
+      "question_ko": "서로 다른 LIKES/REPLY_OF 경로가 같은 라벨 시퀀스를 만드는가?"
+    },
+    {
+      "id": "W3",
+      "group": "we",
+      "filename": "S10-we-diff-source-friend.json",
+      "title": "Cross-source Interest Match",
+      "title_ko": "교차 소스 관심사 매칭",
+      "question": "Do KNOWS neighbors reach the same tag categories via identical paths?",
+      "question_ko": "KNOWS 이웃이 동일한 경로로 같은 태그 카테고리에 도달하는가?"
+    },
+    {
+      "id": "W4",
+      "group": "we",
+      "filename": "S24-we-knows-star-pair.json",
+      "title": "KNOWS* Symmetric Pair",
+      "title_ko": "KNOWS* 대칭 쌍",
+      "question": "How many person pairs share identical KNOWS* paths from the same source?",
+      "question_ko": "같은 출발점에서 동일한 KNOWS* 경로를 공유하는 사람 쌍은 얼마나 되는가?"
+    },
+    {
+      "id": "P1",
+      "group": "prefix",
+      "filename": "S11-prefix-friend-chain.json",
+      "title": "Prefix Reply Chain",
+      "title_ko": "접두사 답글 체인",
+      "question": "Which direct replies are prefixes of deeper 2-hop reply chains?",
+      "question_ko": "직접 답글이 더 깊은 2-홉 답글 체인의 접두사인 경우는?"
+    },
+    {
+      "id": "P2",
+      "group": "prefix",
+      "filename": "S12-prefix-mixed-friend.json",
+      "title": "Prefix Interest Pattern",
+      "title_ko": "접두사 관심사 패턴",
+      "question": "Is a member's interest a prefix of a deeper interest-classification chain?",
+      "question_ko": "멤버의 관심사가 더 깊은 관심사-분류 체인의 접두사인가?"
+    },
+    {
+      "id": "P3",
+      "group": "prefix",
+      "filename": "S14-prefix-mixed-chain.json",
+      "title": "Prefix Interaction Nesting",
+      "title_ko": "접두사 상호작용 중첩",
+      "question": "Is a LIKES or HAS_CREATOR hop a prefix of a LIKES/REPLY_OF chain?",
+      "question_ko": "LIKES 또는 HAS_CREATOR 홉이 LIKES/REPLY_OF 체인의 접두사인가?"
+    },
+    {
+      "id": "B1",
+      "group": "bounded",
+      "filename": "S18-rpq-length-friend-liked.json",
+      "title": "Bounded Friend Likes",
+      "title_ko": "제한된 친구 좋아요",
+      "question": "What do close friends (1-3 hops) like?",
+      "question_ko": "가까운 친구(1-3홉)가 좋아하는 것은?"
+    },
+    {
+      "id": "B2",
+      "group": "bounded",
+      "filename": "S15-crpq-length-friend-triangle.json",
+      "title": "Bounded Friend Triangle",
+      "title_ko": "제한된 친구 삼각형",
+      "question": "Are close friends (1-3 hops) replying to each other?",
+      "question_ko": "가까운 친구(1-3홉)가 서로 답글을 달고 있는가?"
+    },
+    {
+      "id": "B3",
+      "group": "bounded",
+      "filename": "S16-crpq-length-friend-interest.json",
+      "title": "Reply Chain Interest",
+      "title_ko": "답글 체인 관심사",
+      "question": "How do reply chains connect to personal interests?",
+      "question_ko": "답글 체인이 개인 관심사와 어떻게 연결되는가?"
+    }
+  ]
+}

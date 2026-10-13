@@ -1,0 +1,58 @@
+{
+  "description": "Find shared-interest tags that are also reachable through bounded reply chains (1-3 hops).",
+  "description_ko": "제한된 댓글 홉(1-3홉)으로 도달 가능하면서 관심사와도 일치하는 공유 태그 탐색.",
+  "regex_pattern": "CRPQ + REPLY_OF{1,3}/HAS_TAG",
+  "query_vertices": [
+    "comment:Comment",
+    "tag:Tag",
+    "tag2:Tag",
+    "person:Person"
+  ],
+  "query_edges": [
+    "(tag)<-[P1]-(comment)",
+    "(comment)-[HAS_TAG]->(tag2)",
+    "(person)-[HAS_INTEREST]->(tag)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "REPLY_OF{1,3}/HAS_TAG",
+      "min_length": 2,
+      "max_length": 4,
+      "states": [
+        "q0",
+        "q1",
+        "q2"
+      ],
+      "alphabets": [
+        "REPLY_OF",
+        "HAS_TAG"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "REPLY_OF-",
+          "q1"
+        ],
+        [
+          "q1",
+          "REPLY_OF-",
+          "q1"
+        ],
+        [
+          "q1",
+          "HAS_TAG-",
+          "q2"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q2"
+      ]
+    }
+  },
+  "constraints": [
+    "tag<>tag2"
+  ]
+}

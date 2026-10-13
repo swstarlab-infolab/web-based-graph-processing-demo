@@ -1,0 +1,29 @@
+{
+  "description": "Triangle pattern: a comment replies to a post, both have creators (person1, person2), and person1 can reach person2 via KNOWS* — find social triangles in discussion threads.",
+  "description_ko": "삼각형 패턴: 댓글이 게시글에 답글을 달고, 둘의 작성자(person1, person2)가 KNOWS*로 연결 — 토론 스레드의 소셜 삼각형 탐색.",
+  "regex_pattern": "CRPQ: a* + fixed edges",
+  "query_vertices": [
+    "post:Post",
+    "person2:Person",
+    "comment:Comment",
+    "person1:Person"
+  ],
+  "query_edges": [
+    "(comment)-[REPLY_OF]->(post)",
+    "(person1)<-[HAS_CREATOR]-(comment)",
+    "(post)-[HAS_CREATOR]->(person2)",
+    "(person1)-[P1]->(person2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    }
+  }
+}

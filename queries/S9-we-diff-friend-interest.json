@@ -1,0 +1,49 @@
+{
+  "description": "Find content-interaction paths with matching label sequences — a person's LIKES/REPLY_OF reach must match in label order.",
+  "description_ko": "동일한 라벨 시퀀스를 갖는 콘텐츠 상호작용 경로 탐색 — LIKES/REPLY_OF를 통한 콘텐츠 도달 경로의 라벨 순서가 일치해야 함.",
+  "regex_pattern": "LIKES/REPLY_OF* = LIKES/REPLY_OF (CRPQ+WE)",
+  "query_vertices": [
+    "message:Message",
+    "creator:Person",
+    "tag:Tag",
+    "person:Person",
+    "message2:Message"
+  ],
+  "query_edges": [
+    "(message)<-[P1]-(person)",
+    "(message)-[HAS_CREATOR]->(creator)",
+    "(tag)<-[HAS_TAG]-(message)",
+    "(message2)<-[P2]-(person)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "LIKES/REPLY_OF*",
+      "states": ["q0", "q1"],
+      "alphabets": ["LIKES", "REPLY_OF"],
+      "transitions": [
+        ["q0", "LIKES-", "q1"],
+        ["q1", "REPLY_OF-", "q1"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q1"]
+    },
+    "P2": {
+      "regular_expression": "LIKES/REPLY_OF",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["LIKES", "REPLY_OF"],
+      "transitions": [
+        ["q0", "LIKES-", "q1"],
+        ["q1", "REPLY_OF-", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q2"]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same"
+    }
+  ]
+}

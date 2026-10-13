@@ -1,0 +1,98 @@
+{
+  "description": "Different-source WE: find KNOWS-linked friend pairs whose KNOWS*/HAS_INTEREST/HAS_TYPE paths produce identical label sequences — matching social-interest-category reachability.",
+  "description_ko": "다른 소스 WE: KNOWS로 연결된 친구 쌍에서 KNOWS*/HAS_INTEREST/HAS_TYPE 경로의 라벨 시퀀스가 동일한 쌍 탐색 — 소셜→관심사→카테고리 도달성 매칭.",
+  "regex_pattern": "KNOWS*/HAS_INTEREST/HAS_TYPE = KNOWS*/HAS_INTEREST/HAS_TYPE (diff-source, KNOWS link)",
+  "query_vertices": [
+    "v1:Person",
+    "v2:Person",
+    "v3:Any",
+    "v4:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v3)",
+    "(v2)-[P2]->(v4)",
+    "(v1)-[KNOWS]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*/HAS_INTEREST/HAS_TYPE",
+      "states": [
+        "q0",
+        "q1",
+        "q2"
+      ],
+      "alphabets": [
+        "KNOWS",
+        "HAS_INTEREST",
+        "HAS_TYPE"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "KNOWS-",
+          "q0"
+        ],
+        [
+          "q0",
+          "HAS_INTEREST-",
+          "q1"
+        ],
+        [
+          "q1",
+          "HAS_TYPE-",
+          "q2"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q2"
+      ]
+    },
+    "P2": {
+      "regular_expression": "KNOWS*/HAS_INTEREST/HAS_TYPE",
+      "states": [
+        "q0",
+        "q1",
+        "q2"
+      ],
+      "alphabets": [
+        "KNOWS",
+        "HAS_INTEREST",
+        "HAS_TYPE"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "KNOWS-",
+          "q0"
+        ],
+        [
+          "q0",
+          "HAS_INTEREST-",
+          "q1"
+        ],
+        [
+          "q1",
+          "HAS_TYPE-",
+          "q2"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q2"
+      ]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "different",
+      "linking_label": "KNOWS"
+    }
+  ]
+}

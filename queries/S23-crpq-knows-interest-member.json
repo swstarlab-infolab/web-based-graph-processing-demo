@@ -1,0 +1,28 @@
+{
+  "description": "Find forum members whose KNOWS* friends have specific interests — join KNOWS* traversal with HAS_INTEREST and HAS_MEMBER edges.",
+  "description_ko": "포럼 멤버의 KNOWS* 친구가 특정 관심사를 가진 경우 탐색 — KNOWS* 순회와 HAS_INTEREST, HAS_MEMBER 조인.",
+  "regex_pattern": "CRPQ: a* + fixed edges",
+  "query_vertices": [
+    "person1:Person",
+    "person2:Person",
+    "tag:Tag",
+    "forum:Forum"
+  ],
+  "query_edges": [
+    "(person1)-[P1]->(person2)",
+    "(person2)-[HAS_INTEREST]->(tag)",
+    "(forum)-[HAS_MEMBER]->(person1)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS*",
+      "states": ["q0"],
+      "alphabets": ["KNOWS"],
+      "transitions": [
+        ["q0", "KNOWS-", "q0"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q0"]
+    }
+  }
+}

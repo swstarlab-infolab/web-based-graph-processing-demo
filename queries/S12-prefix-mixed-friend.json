@@ -1,0 +1,49 @@
+{
+  "description": "Find forum members whose interest tag (with its own classification) is a prefix of a deeper interest-classification chain — member interest patterns.",
+  "description_ko": "포럼 멤버의 관심사 태그(자체 분류 보유)가 더 깊은 관심사-분류 체인의 접두사인 경우 탐색 — 멤버 관심사 패턴.",
+  "regex_pattern": "prefix(HAS_INTEREST, HAS_INTEREST/HAS_TYPE) (CRPQ+pWE)",
+  "query_vertices": [
+    "person:Person",
+    "tag:Tag",
+    "tagclass1:TagClass",
+    "tagclass2:TagClass",
+    "forum:Forum"
+  ],
+  "query_edges": [
+    "(person)-[P1]->(tag)",
+    "(person)-[P2]->(tagclass2)",
+    "(tag)-[HAS_TYPE]->(tagclass1)",
+    "(forum)-[HAS_MEMBER]->(person)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "HAS_INTEREST",
+      "states": ["q0", "q1"],
+      "alphabets": ["HAS_INTEREST"],
+      "transitions": [
+        ["q0", "HAS_INTEREST-", "q1"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q1"]
+    },
+    "P2": {
+      "regular_expression": "HAS_INTEREST/HAS_TYPE",
+      "states": ["q0", "q1", "q2"],
+      "alphabets": ["HAS_INTEREST", "HAS_TYPE"],
+      "transitions": [
+        ["q0", "HAS_INTEREST-", "q1"],
+        ["q1", "HAS_TYPE-", "q2"]
+      ],
+      "initial_states": ["q0"],
+      "final_states": ["q2"]
+    }
+  },
+  "word_equality_constraints": [
+    {
+      "path1": "P1",
+      "path2": "P2",
+      "source_constraint": "same",
+      "type": "prefix"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ from config import (
     ENGINE_CUDA_DEVICES,
     ENGINE_MODE,
     PRELOAD_DATASETS,
+    QUERIES_DIR,
     QUERY_TIMEOUT,
     SCHEMA_DIR,
 )
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
 SCHEMA_PATH = PROJECT_ROOT / SCHEMA_DIR
+QUERIES_PATH = PROJECT_ROOT / QUERIES_DIR
 CACHE_DIR = BACKEND_DIR / ".result_cache"
 SAMPLES_DIR = BACKEND_DIR / "samples"
 
@@ -56,6 +58,7 @@ async def lifespan(application: FastAPI):
     logger.info("Web graph demo backend starting (engine=%s)", ENGINE_MODE)
     logger.info("Project root: %s", PROJECT_ROOT)
     logger.info("Schema dir: %s", SCHEMA_PATH)
+    logger.info("Demo queries dir: %s", QUERIES_PATH)
     # Pre-load grids so first query is instant
     if PRELOAD_DATASETS:
         logger.info("Pre-loading datasets: %s", PRELOAD_DATASETS)
@@ -171,6 +174,38 @@ class DatasetInfo(BaseModel):
     name: str
     schema: str
     loaded: bool
+
+
+class CatalogScenario(BaseModel):
+    """Display metadata for a single scenario from catalog.json."""
+
+    id: str
+    group: str
+    title: str
+    title_ko: str = ""
+    question: str = ""
+    question_ko: str = ""
+    tag: str = ""
+
+
+class CatalogGroup(BaseModel):
+    """Display metadata for a group from catalog.json."""
+
+    id: str
+    label: str
+    label_ko: str = ""
+    description: str = ""
+    color: str = ""
+    tagline: str = ""
+
+
+class PresetQuery(BaseModel):
+    """A preset query loaded from disk, enriched with catalog metadata."""
+
+    name: str
+    filename: str
+    content: dict
+    catalog: CatalogScenario | None = None
 
 
 class BuildQueryRequest(BaseModel):
@@ -713,6 +748,81 @@ async def get_neighborhood(req: NeighborhoodRequest) -> dict:
     return result
 
 
+def _load_catalog() -> tuple[list[CatalogGroup], dict[str, CatalogScenario], list[str]]:
+    """Load catalog.json and return (groups, filename→scenario map, ordered filenames)."""
+    catalog_path = QUERIES_PATH / "catalog.json"
+    groups: list[CatalogGroup] = []
+    scenario_map: dict[str, CatalogScenario] = {}
+    ordered_filenames: list[str] = []
+    if catalog_path.exists():
+        try:
+            with open(catalog_path) as f:
+                cat = json.load(f)
+            for g in cat.get("groups", []):
+                groups.append(CatalogGroup(**g))
+            for s in cat.get("scenarios", []):
+                sc = CatalogScenario(
+                    id=s["id"], group=s["group"],
+                    title=s.get("title", ""), title_ko=s.get("title_ko", ""),
+                    question=s.get("question", ""), question_ko=s.get("question_ko", ""),
+                    tag=s.get("tag", ""),
+                )
+                scenario_map[s["filename"]] = sc
+                ordered_filenames.append(s["filename"])
+        except Exception as e:
+            logger.warning("Failed to load catalog.json: %s", e)
+    return groups, scenario_map, ordered_filenames
+
+
+@app.get("/api/presets")
+async def get_presets() -> dict:
+    """Return preset queries from catalog.json ordering, enriched with metadata."""
+    groups, scenario_map, ordered_filenames = _load_catalog()
+
+    # Load all S*.json files into a dict keyed by filename
+    file_contents: dict[str, dict] = {}
+    if QUERIES_PATH.exists():
+        for filepath in QUERIES_PATH.glob("S*.json"):
+            try:
+                with open(filepath) as f:
+                    file_contents[filepath.name] = json.load(f)
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning("Failed to load preset %s: %s", filepath.name, e)
+
+    # Build presets in catalog order (catalog entries first, then uncatalogued)
+    presets: list[PresetQuery] = []
+    seen: set[str] = set()
+
+    for fname in ordered_filenames:
+        if fname not in file_contents:
+            continue
+        content = file_contents[fname]
+        stem = fname.rsplit(".", 1)[0]
+        presets.append(PresetQuery(
+            name=stem, filename=fname, content=content,
+            catalog=scenario_map.get(fname),
+        ))
+        seen.add(fname)
+
+    # Append any S*.json not in catalog (natural sort)
+    def _nat_key(name: str) -> list:
+        import re
+        return [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', name)]
+
+    for fname in sorted(file_contents.keys() - seen, key=_nat_key):
+        content = file_contents[fname]
+        stem = fname.rsplit(".", 1)[0]
+        presets.append(PresetQuery(
+            name=stem, filename=fname, content=content,
+            catalog=scenario_map.get(fname),
+        ))
+
+    return {
+        "groups": [g.model_dump() for g in groups],
+        "presets": [p.model_dump() for p in presets],
+    }
+
+
 @app.post("/api/nfa")
 async def build_nfa(req: NFARequest) -> dict:
     """Convert a regex pattern to an NFA automaton in engine JSON format."""
@@ -744,4 +854,75 @@ async def get_status() -> dict:
         # Exposed so the demo pre-flight can prove every query really reaches
         # the engine, instead of inferring it from response times.
         "cache_disabled": DISABLE_CACHE,
+    }
+
+
+@app.post("/api/warmup")
+async def warmup_cache(dataset_id: str = "LDBC_SNB_SF1") -> dict:
+    """Pre-run all S-series preset queries and cache results.
+
+    Call this once before a demo session to fill the cache.
+    Acquires _query_lock for the whole batch to avoid 409 conflicts.
+    Returns the number of queries cached and any errors.
+    """
+    if dataset_id not in DATASETS:
+        raise HTTPException(status_code=400, detail=f"Unknown dataset: {dataset_id}")
+
+    if _query_lock.locked():
+        raise HTTPException(status_code=409, detail="Another query is already running")
+
+    presets = (await get_presets())["presets"]
+    s_presets = [PresetQuery(**p) for p in presets if p["filename"].startswith("S")]
+
+    cached = 0
+    skipped = 0
+    errors: list[str] = []
+
+    async with _query_lock:
+        for preset in s_presets:
+            # Skip if already cached
+            if _cache_get(preset.content, dataset_id) is not None:
+                skipped += 1
+                continue
+
+            logger.info("Warming up: %s on %s", preset.filename, dataset_id)
+            try:
+                query_str = json.dumps(preset.content)
+                # Use longer timeout for warmup (pre-demo batch, not interactive)
+                warmup_timeout = max(QUERY_TIMEOUT, 120)
+                result = await runner.run_query(
+                    query_str, dataset_id, _runner_config(), timeout=warmup_timeout
+                )
+
+                query_type = result.get("query_type", "rpq")
+                samples = _diversify_samples(result.get("samples", []), query_type)
+
+                try:
+                    schema_name = DATASETS[dataset_id]["schema"]
+                    schema_raw = load_schema(schema_name, str(SCHEMA_PATH))
+                    schema_summary = get_schema_summary(schema_raw)
+                except Exception:
+                    schema_summary = None
+                samples = _augment_samples(samples, preset.content, query_type, schema_summary)
+
+                response_data = QueryResponse(
+                    query_type=query_type,
+                    total_count=result.get("total_count", 0),
+                    elapsed_ms=result.get("elapsed_ms", 0.0),
+                    samples=samples,
+                    **_engine_diagnostics(result),
+                ).model_dump()
+                _cache_put(preset.content, dataset_id, response_data)
+                cached += 1
+            except Exception as e:
+                err_msg = f"{preset.filename}: {e}"
+                logger.warning("Warmup failed: %s", err_msg)
+                errors.append(err_msg)
+
+    return {
+        "dataset_id": dataset_id,
+        "cached": cached,
+        "skipped": skipped,
+        "errors": errors,
+        "total": len(s_presets),
     }

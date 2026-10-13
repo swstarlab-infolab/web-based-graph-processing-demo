@@ -1,0 +1,50 @@
+{
+  "description": "Forum moderator's city via friend network — forum → moderator → KNOWS* → city. Tests moderator reachability to any city; GPU engine vs Umbra ~12x speedup.",
+  "description_ko": "포럼 관리자의 친구 네트워크를 통한 도시 탐색 — 포럼 → 관리자 → KNOWS* → 도시. GPU 엔진 대비 Umbra 약 12배 빠름.",
+  "regex_pattern": "ab*c",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "HAS_MODERATOR/KNOWS*/IS_LOCATED_IN",
+      "states": [
+        "q0",
+        "q1",
+        "q2"
+      ],
+      "alphabets": [
+        "HAS_MODERATOR",
+        "KNOWS",
+        "IS_LOCATED_IN"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "-IS_LOCATED_IN",
+          "q1"
+        ],
+        [
+          "q1",
+          "-KNOWS",
+          "q1"
+        ],
+        [
+          "q1",
+          "-HAS_MODERATOR",
+          "q2"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q2"
+      ]
+    }
+  }
+}

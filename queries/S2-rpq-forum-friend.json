@@ -1,0 +1,43 @@
+{
+  "description": "Forum → moderator → friend network — from each forum, follow its moderator then any KNOWS path. Combines two edge types; GPU engine vs Umbra ~16x speedup.",
+  "description_ko": "포럼 → 관리자 → 친구 네트워크 — 각 포럼에서 관리자를 따라 친구 경로 탐색. 두 에지 타입 결합; GPU 엔진 대비 Umbra 약 16배 빠름.",
+  "regex_pattern": "ab*",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "HAS_MODERATOR/KNOWS*",
+      "states": [
+        "q0",
+        "q1"
+      ],
+      "alphabets": [
+        "HAS_MODERATOR",
+        "KNOWS"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "-KNOWS",
+          "q0"
+        ],
+        [
+          "q0",
+          "-HAS_MODERATOR",
+          "q1"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q1"
+      ]
+    }
+  }
+}
