@@ -1,0 +1,42 @@
+{
+  "description": "Multi-label social reachability — find all (person/tag, person/tag) pairs connected by any-length mix of KNOWS and HAS_INTEREST edges. Multi-label Kleene star: the GPU engine handles; Umbra times out.",
+  "description_ko": "다중 레이블 소셜 도달 가능성 — KNOWS/HAS_INTEREST 에지를 혼합한 임의 길이 경로로 연결된 모든 쌍 탐색. 다중 레이블 Kleene: GPU 엔진 처리, Umbra 타임아웃.",
+  "regex_pattern": "(a+b)*",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "(KNOWS|HAS_INTEREST)*",
+      "states": [
+        "q0"
+      ],
+      "alphabets": [
+        "KNOWS",
+        "HAS_INTEREST"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "KNOWS-",
+          "q0"
+        ],
+        [
+          "q0",
+          "HAS_INTEREST-",
+          "q0"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q0"
+      ]
+    }
+  }
+}

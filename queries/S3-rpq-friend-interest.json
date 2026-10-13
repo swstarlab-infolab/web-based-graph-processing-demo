@@ -1,0 +1,57 @@
+{
+  "description": "Friend-of-friend interest category — follow 2 KNOWS hops, then HAS_INTEREST, then HAS_TYPE to tag class. Non-recursive 4-hop join; GPU engine vs Umbra ~280x speedup.",
+  "description_ko": "친구의 친구 관심 카테고리 — KNOWS 2홉, HAS_INTEREST, HAS_TYPE 경로 탐색. 비재귀 4홉 조인; GPU 엔진 대비 Umbra 약 280배 빠름.",
+  "regex_pattern": "abcd",
+  "query_vertices": [
+    "v1:Any",
+    "v2:Any"
+  ],
+  "query_edges": [
+    "(v1)-[P1]->(v2)"
+  ],
+  "automata": {
+    "P1": {
+      "regular_expression": "KNOWS/KNOWS/HAS_INTEREST/HAS_TYPE",
+      "states": [
+        "q0",
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "alphabets": [
+        "KNOWS",
+        "HAS_INTEREST",
+        "HAS_TYPE"
+      ],
+      "transitions": [
+        [
+          "q0",
+          "-HAS_TYPE",
+          "q1"
+        ],
+        [
+          "q1",
+          "-HAS_INTEREST",
+          "q2"
+        ],
+        [
+          "q2",
+          "-KNOWS",
+          "q3"
+        ],
+        [
+          "q3",
+          "-KNOWS",
+          "q4"
+        ]
+      ],
+      "initial_states": [
+        "q0"
+      ],
+      "final_states": [
+        "q4"
+      ]
+    }
+  }
+}
