@@ -991,3 +991,20 @@ async def warmup_cache(dataset_id: str = "LDBC_SNB_SF1") -> dict:
         "errors": errors,
         "total": len(s_presets),
     }
+
+
+# ---------------------------------------------------------------------------
+# Serve frontend static files (SPA fallback) — MUST be last
+# ---------------------------------------------------------------------------
+
+FRONTEND_DIST = PROJECT_ROOT / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    from fastapi.responses import FileResponse
+
+    @app.get("/{full_path:path}")
+    async def _spa_fallback(full_path: str):
+        """Serve static files from dist/, with SPA fallback to index.html."""
+        file_path = FRONTEND_DIST / full_path
+        if full_path and file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(FRONTEND_DIST / "index.html")
