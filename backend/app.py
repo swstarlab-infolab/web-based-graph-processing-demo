@@ -17,9 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from config import (
+    BENCHMARK_TIMEOUT,
     DATASETS,
     DEFAULT_BUFFERS,
     DEFAULT_SAMPLE_K,
+    DUCKDB_PATHS,
     ENGINE_BINARY,
     ENGINE_CUDA_DEVICES,
     ENGINE_MODE,
@@ -27,7 +29,10 @@ from config import (
     QUERIES_DIR,
     QUERY_TIMEOUT,
     SCHEMA_DIR,
+    UMBRA_CONFIGS,
+    UMBRA_HOST,
 )
+from baselines import run_duckdb_query, run_umbra_query
 from engine import EngineTimeout, create_engine
 from nfa_builder import build_query_json, regex_to_automaton
 from schema_loader import get_schema_summary, load_schema
@@ -215,6 +220,15 @@ class BuildQueryRequest(BaseModel):
     edges: list[str]
     automata: dict[str, dict]
     we_constraints: list[dict] | None = None
+
+
+class BenchmarkRequest(BaseModel):
+    """Request body for running Umbra or DuckDB benchmark."""
+
+    preset_filename: str
+    system: str  # "umbra" or "duckdb"
+    timeout_sec: int | None = None  # override default timeout
+    dataset_id: str = "LDBC_SNB_SF1"  # match the engine dataset
 
 
 # ---------------------------------------------------------------------------
@@ -843,6 +857,57 @@ async def build_nfa(req: NFARequest) -> dict:
 async def build_query(req: BuildQueryRequest) -> dict:
     """Build a complete engine query JSON from frontend components."""
     return build_query_json(req.vertices, req.edges, req.automata, req.we_constraints)
+
+
+_current_benchmark: dict = {"task": None}
+
+
+@app.post("/api/benchmark")
+async def run_benchmark(req: BenchmarkRequest) -> dict:
+    """Run Umbra or DuckDB SQL equivalent for the given preset query."""
+    timeout = req.timeout_sec if req.timeout_sec is not None else BENCHMARK_TIMEOUT
+    loop = asyncio.get_event_loop()
+
+    if req.system == "umbra":
+        umb_cfg = UMBRA_CONFIGS.get(req.dataset_id, UMBRA_CONFIGS["LDBC_SNB_SF1"])
+        umb_port = umb_cfg["port"]
+        umb_container = umb_cfg["container"]
+        fn = lambda: run_umbra_query(req.preset_filename, UMBRA_HOST, umb_port, timeout, umb_container)
+    elif req.system == "duckdb":
+        duckdb_path = DUCKDB_PATHS.get(req.dataset_id, DUCKDB_PATHS["LDBC_SNB_SF1"])
+        fn = lambda: run_duckdb_query(req.preset_filename, duckdb_path)
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown system: {req.system!r}. Use 'umbra' or 'duckdb'.")
+
+    async def _run() -> dict:
+        return await asyncio.wait_for(
+            loop.run_in_executor(None, fn),
+            timeout=timeout + 5,
+        )
+
+    task = asyncio.ensure_future(_run())
+    _current_benchmark["task"] = task
+    try:
+        result = await task
+    except asyncio.CancelledError:
+        return {"supported": True, "total_count": None, "elapsed_ms": None, "error": "Cancelled"}
+    except (TimeoutError, asyncio.TimeoutError):
+        return {"supported": True, "total_count": None, "elapsed_ms": None, "error": f"Timed out after {timeout}s"}
+    finally:
+        _current_benchmark["task"] = None
+
+    logger.info("Benchmark %s/%s: %s", req.system, req.preset_filename, result)
+    return result
+
+
+@app.delete("/api/benchmark")
+async def cancel_benchmark() -> dict:
+    """Cancel the currently running benchmark."""
+    task = _current_benchmark.get("task")
+    if task and not task.done():
+        task.cancel()
+        return {"cancelled": True}
+    return {"cancelled": False}
 
 
 @app.get("/api/status")
