@@ -6,6 +6,12 @@ An interactive web interface for exploring path queries over large property
 graphs. Draw a query pattern, attach regular expressions over edge labels to
 its edges, run it, and inspect the matching paths as an interactive graph.
 
+## Screenshots
+
+| Scenario catalog | Query editor | Result graph |
+|---|---|---|
+| ![Scenario catalog](docs/images/welcome.png) | ![Query editor](docs/images/query-editor.png) | ![Result graph](docs/images/result-graph.png) |
+
 ## Features
 
 - **Visual query canvas** – draw query vertices and edges, pick labels from the dataset schema
