@@ -14,7 +14,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from config import (
     BENCHMARK_TIMEOUT,
@@ -175,9 +175,13 @@ class NFARequest(BaseModel):
 class DatasetInfo(BaseModel):
     """Information about an available dataset."""
 
+    # "schema" shadows a BaseModel attribute, so the field is stored as
+    # schema_name and keeps "schema" as its JSON name.
+    model_config = ConfigDict(populate_by_name=True)
+
     id: str
     name: str
-    schema: str
+    schema_name: str = Field(alias="schema")
     loaded: bool
 
 

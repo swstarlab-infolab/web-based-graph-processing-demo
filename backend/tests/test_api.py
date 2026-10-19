@@ -24,8 +24,9 @@ def test_status(client):
 
 
 def test_datasets(client):
-    ids = [d["id"] for d in client.get("/api/datasets").json()]
-    assert "LDBC_SNB_SF1" in ids
+    body = client.get("/api/datasets").json()
+    assert "LDBC_SNB_SF1" in [d["id"] for d in body]
+    assert all(d["schema"] == "LDBC_SNB" for d in body)
 
 
 def test_schema(client):
