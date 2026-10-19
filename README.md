@@ -44,6 +44,8 @@ npm run dev
 
 Open http://localhost:9173.
 
+See [docs/SETUP.md](docs/SETUP.md) for live-engine mode, baseline systems and tests.
+
 ## License
 
 BSD 2-Clause License. See [LICENSE](LICENSE).
