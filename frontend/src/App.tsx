@@ -23,6 +23,7 @@ import {
 } from './utils/queryToggle';
 import {
   fetchDatasets,
+  fetchEngineMode,
   fetchSchema,
   fetchPresets,
   runQuery,
@@ -231,6 +232,8 @@ async function expandCrpqSamples(
 const App: FC = () => {
   // Dataset and schema state
   const [datasets, setDatasets] = useState<Dataset[]>(MOCK_DATASETS);
+  // Backend engine mode; "mock" means every answer is a recorded result.
+  const [engineMode, setEngineMode] = useState<string | null>(null);
   const [selectedDataset, setSelectedDataset] = useState('');
   const [schema, setSchema] = useState<Schema>(MOCK_SCHEMA);
   const [presets, setPresets] = useState<PresetQuery[]>(MOCK_PRESETS);
@@ -372,11 +375,13 @@ const App: FC = () => {
   // Load initial data
   useEffect(() => {
     const init = async () => {
-      const [ds, pr] = await Promise.all([
+      const [ds, pr, mode] = await Promise.all([
         fetchDatasets(),
         fetchPresets(),
+        fetchEngineMode(),
       ]);
       setDatasets(ds);
+      setEngineMode(mode);
       setCatalogGroups(pr.groups);
       setPresets(pr.presets);
       initializedRef.current = true;
@@ -776,6 +781,7 @@ const App: FC = () => {
         onSelectDataset={setSelectedDataset}
         onShowWelcome={() => setShowWelcome(true)}
         isMockMode={isMockMode()}
+        engineMode={engineMode}
         cacheMode={cacheMode}
         onToggleCacheMode={() => setCacheModeState((v) => !v)}
         isDark={isDark}
