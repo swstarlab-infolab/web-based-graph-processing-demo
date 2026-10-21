@@ -757,6 +757,7 @@ const App: FC = () => {
   if (showWelcome) {
     return (
       <WelcomeScreen
+        datasets={datasets}
         presets={presets}
         catalogGroups={catalogGroups}
         onContinue={handleContinue}

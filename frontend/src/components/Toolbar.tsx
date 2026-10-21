@@ -26,6 +26,7 @@ interface ToolbarProps {
 }
 
 const Toolbar: FC<ToolbarProps> = ({
+  datasets,
   selectedDataset,
   onSelectDataset,
   onShowWelcome,
@@ -43,6 +44,8 @@ const Toolbar: FC<ToolbarProps> = ({
   }, [selectedDataset]);
 
   const currentFamily = DATASET_FAMILIES[currentFamilyIdx];
+
+  const isAvailable = (id: string) => datasets.find((ds) => ds.id === id)?.available !== false;
 
   return (
     <header className={`flex items-center justify-between px-6 py-3 shrink-0 border-b ${
@@ -91,7 +94,9 @@ const Toolbar: FC<ToolbarProps> = ({
               <button
                 key={opt.id}
                 onClick={() => onSelectDataset(opt.id)}
-                className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                disabled={!isAvailable(opt.id)}
+                title={isAvailable(opt.id) ? undefined : 'No recorded results for this dataset in mock mode'}
+                className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                   selectedDataset === opt.id
                     ? d ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500/50' : 'bg-cyan-50 text-cyan-700 border border-cyan-400'
                     : d ? 'text-gray-500 hover:text-gray-300 border border-transparent' : 'text-gray-400 hover:text-gray-600 border border-transparent'
