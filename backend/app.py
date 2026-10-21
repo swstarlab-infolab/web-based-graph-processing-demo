@@ -183,6 +183,9 @@ class DatasetInfo(BaseModel):
     name: str
     schema_name: str = Field(alias="schema")
     loaded: bool
+    # False when the engine has nothing to answer with (e.g. no recordings
+    # for this dataset in mock mode); the UI disables such datasets.
+    available: bool = True
 
 
 class CatalogScenario(BaseModel):
@@ -549,6 +552,7 @@ def _diversify_samples(samples: list[Any], query_type: str) -> list[Any]:
 async def get_datasets() -> list[DatasetInfo]:
     """Return available datasets with loading status."""
     result: list[DatasetInfo] = []
+    available = runner.available_datasets()
     for dataset_id, info in DATASETS.items():
         result.append(
             DatasetInfo(
@@ -556,6 +560,7 @@ async def get_datasets() -> list[DatasetInfo]:
                 name=info["name"],
                 schema=info["schema"],
                 loaded=False,
+                available=available is None or dataset_id in available,
             )
         )
     return result

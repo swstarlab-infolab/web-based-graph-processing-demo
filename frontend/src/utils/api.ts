@@ -190,6 +190,16 @@ export async function fetchNeighborhood(
   return { ...res, vertices: res?.vertices ?? [], edges: res?.edges ?? [] };
 }
 
+/** Engine mode reported by the backend ("mock" | "process"), or null if unreachable. */
+export async function fetchEngineMode(): Promise<string | null> {
+  try {
+    const res = await apiFetch<{ mode?: string }>('/status');
+    return res.mode ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Check if we are currently in mock mode */
 export function isMockMode(): boolean {
   return useMock;

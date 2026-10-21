@@ -163,6 +163,9 @@ export interface Dataset {
   name: string;
   schema: string;
   loaded: boolean;
+  /** False when the backend cannot answer queries on this dataset (e.g. no
+   *  recorded results in mock mode). Missing means available. */
+  available?: boolean;
 }
 
 /** Catalog metadata for a single scenario */

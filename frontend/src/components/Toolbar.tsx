@@ -18,6 +18,8 @@ interface ToolbarProps {
   onSelectDataset: (id: string) => void;
   onShowWelcome?: () => void;
   isMockMode: boolean;
+  /** Backend engine mode ("mock" | "process"), null when unknown. */
+  engineMode: string | null;
   /** Replay stored results instead of running the engine. */
   cacheMode: boolean;
   onToggleCacheMode: () => void;
@@ -26,10 +28,12 @@ interface ToolbarProps {
 }
 
 const Toolbar: FC<ToolbarProps> = ({
+  datasets,
   selectedDataset,
   onSelectDataset,
   onShowWelcome,
   isMockMode,
+  engineMode,
   cacheMode,
   onToggleCacheMode,
   isDark: d,
@@ -43,6 +47,10 @@ const Toolbar: FC<ToolbarProps> = ({
   }, [selectedDataset]);
 
   const currentFamily = DATASET_FAMILIES[currentFamilyIdx];
+
+  // A mock engine only replays recordings, so "Live" would be a false claim.
+  const engineIsMock = engineMode === 'mock';
+  const isAvailable = (id: string) => datasets.find((ds) => ds.id === id)?.available !== false;
 
   return (
     <header className={`flex items-center justify-between px-6 py-3 shrink-0 border-b ${
@@ -91,7 +99,9 @@ const Toolbar: FC<ToolbarProps> = ({
               <button
                 key={opt.id}
                 onClick={() => onSelectDataset(opt.id)}
-                className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all ${
+                disabled={!isAvailable(opt.id)}
+                title={isAvailable(opt.id) ? undefined : 'No recorded results for this dataset in mock mode'}
+                className={`text-xs px-2.5 py-1 rounded-md font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
                   selectedDataset === opt.id
                     ? d ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500/50' : 'bg-cyan-50 text-cyan-700 border border-cyan-400'
                     : d ? 'text-gray-500 hover:text-gray-300 border border-transparent' : 'text-gray-400 hover:text-gray-600 border border-transparent'
@@ -109,7 +119,7 @@ const Toolbar: FC<ToolbarProps> = ({
         {/* Where answers come from.  Live is the default and the claim the demo
             makes; Cached is an escape hatch for a slow query or a bad link, and
             it says so loudly rather than quietly looking fast. */}
-        <button
+        {!engineIsMock && <button
           className={`text-xs font-semibold px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-colors ${
             cacheMode
               ? (d ? 'text-amber-300 bg-amber-900/30 border-amber-600/60 hover:bg-amber-900/50'
@@ -127,12 +137,17 @@ const Toolbar: FC<ToolbarProps> = ({
                       : (d ? 'bg-emerald-400' : 'bg-emerald-500')
           }`} />
           {cacheMode ? 'Cached' : 'Live'}
-        </button>
+        </button>}
 
-        {isMockMode && (
-          <span className={`text-xs font-medium px-2 py-0.5 rounded border ${
-            d ? 'text-amber-400 bg-amber-900/20 border-amber-700/50' : 'text-amber-600 bg-amber-50 border-amber-200'
-          }`}>
+        {(isMockMode || engineIsMock) && (
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded border ${
+              d ? 'text-amber-400 bg-amber-900/20 border-amber-700/50' : 'text-amber-600 bg-amber-50 border-amber-200'
+            }`}
+            title={isMockMode
+              ? 'Backend unreachable: showing built-in sample data.'
+              : 'Mock engine: answers are replayed from recorded results.'}
+          >
             Mock
           </span>
         )}

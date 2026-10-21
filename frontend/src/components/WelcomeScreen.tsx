@@ -1,5 +1,5 @@
 import { useState, useMemo, type FC } from 'react';
-import type { PresetQuery, CatalogGroup } from '../types';
+import type { Dataset, PresetQuery, CatalogGroup } from '../types';
 
 /* ---- Dataset families ---- */
 interface DatasetOption { id: string; label: string; sub: string; }
@@ -32,6 +32,7 @@ function renderBold(text: string, isDark: boolean) {
 
 /* ---- Component ---- */
 interface WelcomeScreenProps {
+  datasets: Dataset[];
   presets: PresetQuery[];
   catalogGroups: CatalogGroup[];
   onContinue: (datasetId: string, preset: PresetQuery | null) => void;
@@ -39,11 +40,13 @@ interface WelcomeScreenProps {
   onToggleTheme: () => void;
 }
 
-const WelcomeScreen: FC<WelcomeScreenProps> = ({ presets, catalogGroups, onContinue, isDark: d, onToggleTheme }) => {
+const WelcomeScreen: FC<WelcomeScreenProps> = ({ datasets, presets, catalogGroups, onContinue, isDark: d, onToggleTheme }) => {
   const [familyKey, setFamilyKey] = useState<string>('ldbc');
   const [datasetId, setDatasetId] = useState('LDBC_SNB_SF1');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const isAvailable = (id: string) => datasets.find(ds => ds.id === id)?.available !== false;
 
   const family = DATASET_FAMILIES.find(f => f.key === familyKey) ?? DATASET_FAMILIES[0];
 
@@ -172,8 +175,9 @@ const WelcomeScreen: FC<WelcomeScreenProps> = ({ presets, catalogGroups, onConti
                   <button
                     key={o.id}
                     onClick={() => setDatasetId(o.id)}
-                    title={o.sub}
-                    className={`text-sm px-4 py-2 rounded-lg font-semibold transition-all border shrink-0 ${
+                    disabled={!isAvailable(o.id)}
+                    title={isAvailable(o.id) ? o.sub : 'No recorded results for this dataset in mock mode'}
+                    className={`text-sm px-4 py-2 rounded-lg font-semibold transition-all border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
                       datasetId === o.id
                         ? d ? 'border-cyan-500/60 bg-cyan-950/50 text-cyan-400'
                             : 'border-cyan-400 bg-cyan-50 text-cyan-700'

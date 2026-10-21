@@ -39,6 +39,10 @@ class QueryEngine(ABC):
     async def shutdown(self) -> None:
         """Release engine resources (optional)."""
 
+    def available_datasets(self) -> set[str] | None:
+        """Datasets this engine can answer, or None when it can answer any."""
+        return None
+
     def memory_gb(self, dataset_id: str) -> dict:
         """Live memory footprint for the dataset, or {} if unknown."""
         return {}
