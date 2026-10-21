@@ -29,6 +29,13 @@ def test_datasets(client):
     assert all(d["schema"] == "LDBC_SNB" for d in body)
 
 
+def test_datasets_report_mock_availability(client):
+    body = {d["id"]: d for d in client.get("/api/datasets").json()}
+    # Recordings exist for SF1 only.
+    assert body["LDBC_SNB_SF1"]["available"] is True
+    assert body["LDBC_SNB_SF10"]["available"] is False
+
+
 def test_schema(client):
     body = client.get("/api/schema/LDBC_SNB_SF1").json()
     assert "KNOWS" in body["edge_labels"]

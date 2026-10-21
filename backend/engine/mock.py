@@ -109,6 +109,9 @@ class MockEngine(QueryEngine):
         self.current_dataset = None
         logger.info("Mock engine loaded %d recorded results", len(self._results))
 
+    def available_datasets(self) -> set[str] | None:
+        return {dataset_id for dataset_id, _ in self._results}
+
     async def run_query(
         self, query_json: str, dataset_id: str, config: dict, timeout: int = 300
     ) -> dict:
